@@ -7,14 +7,14 @@ import NewsWidget from '../components/NewsWidget.astro';
 ---
 
 <Layout title="Inicio" isHome={true}>
-	<main class="min-h-screen flex flex-col items-center relative">
-    <div class="h-screen flex flex-col items-center justify-center w-full flex-shrink-0">
-      <WeatherWidget />
+	<main class="min-h-screen flex flex-col items-center relative w-full overflow-x-hidden">
+    <div class="min-h-[90vh] md:h-screen flex flex-col items-center justify-center w-full px-4 pt-10 md:pt-0">
       <Clock />
+      <WeatherWidget />
       <SearchBox />
     </div>
     
-    <div class="w-full max-w-5xl px-4 pb-20">
+    <div class="w-full max-w-6xl px-4 pb-20 mt-10 md:mt-0">
       <NewsWidget />
     </div>
     
@@ -23,10 +23,3 @@ import NewsWidget from '../components/NewsWidget.astro';
     </div>
 	</main>
 </Layout>
-
-<style>
-	main {
-		width: 100%;
-		max-width: calc(100% - 2rem);
-	}
-</style>

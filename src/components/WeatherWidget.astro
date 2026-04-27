@@ -1,13 +1,13 @@
 ---
 ---
-<div id="weather-widget" class="fixed top-6 right-6 p-4 glass rounded-2xl text-white min-w-[150px] transition-all duration-500 opacity-0 transform translate-y-2">
-  <div class="flex items-center gap-3">
-    <div id="weather-icon" class="text-3xl">
+<div id="weather-widget" class="md:absolute md:top-6 md:right-6 p-3 md:p-4 glass rounded-2xl text-white min-w-[120px] md:min-w-[150px] transition-all duration-500 opacity-0 transform translate-y-2 mb-6 md:mb-0">
+  <div class="flex items-center justify-center md:justify-start gap-3">
+    <div id="weather-icon" class="text-2xl md:text-3xl">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin-slow"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
     </div>
-    <div>
-      <p id="temp" class="text-2xl font-semibold">--°</p>
-      <p id="city" class="text-xs opacity-70 uppercase tracking-widest">Localizando...</p>
+    <div class="text-left">
+      <p id="temp" class="text-xl md:text-2xl font-semibold">--°</p>
+      <p id="city" class="text-[10px] md:text-xs opacity-70 uppercase tracking-widest">Localizando...</p>
     </div>
   </div>
 </div>
