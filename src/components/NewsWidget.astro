@@ -1,0 +1,224 @@
+---
+---
+<div id="news-container" class="w-full mt-20 transition-all duration-1000 opacity-0 transform translate-y-8">
+  <div class="flex items-center justify-between mb-12 px-6">
+    <h2 class="text-3xl font-bold text-white drop-shadow-2xl tracking-tight">Noticias</h2>
+    <button id="config-news" class="p-3 bg-white/5 backdrop-blur-md rounded-full hover:bg-white/10 transition-all border border-white/10 group">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white/40 group-hover:text-white transition-colors"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    </button>
+  </div>
+
+  <div id="news-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-2">
+    <!-- Skeletons iniciales -->
+    <div class="h-96 bg-white/5 rounded-3xl animate-pulse border border-white/10"></div>
+    <div class="h-96 bg-white/5 rounded-3xl animate-pulse border border-white/10"></div>
+    <div class="h-96 bg-white/5 rounded-3xl animate-pulse border border-white/10"></div>
+  </div>
+</div>
+
+<div id="news-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+  <div class="bg-white/10 glass-card p-6 rounded-3xl w-full max-w-md border border-white/20 shadow-2xl">
+    <h3 class="text-xl font-semibold text-white mb-4">Configurar Feeds</h3>
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs uppercase text-white/60 mb-1">Nombre</label>
+        <input type="text" id="feed-name" placeholder="Ej: El País" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-white/30" />
+      </div>
+      <div>
+        <label class="block text-xs uppercase text-white/60 mb-1">URL RSS (XML)</label>
+        <input type="text" id="feed-url" placeholder="https://..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white focus:outline-none focus:border-white/30" />
+      </div>
+      <button id="add-feed" class="w-full bg-white text-black font-bold py-3 rounded-xl hover:bg-white/90 transition-colors">Añadir Feed</button>
+      
+      <div class="mt-6">
+        <p class="text-xs uppercase text-white/60 mb-2">Tus Feeds</p>
+        <div id="active-feeds" class="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar"></div>
+      </div>
+    </div>
+    <div class="mt-6 pt-4 border-t border-white/10 flex justify-end">
+      <button id="close-modal" class="text-white/70 hover:text-white transition-colors">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const DEFAULT_FEEDS = [
+    { name: 'El País', url: 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada' },
+    { name: 'El Mundo', url: 'https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml' },
+    { name: 'ABC', url: 'https://www.abc.es/rss/feeds/abc_portada.xml' },
+    { name: '20 Minutos', url: 'https://www.20minutos.es/rss/' },
+    { name: 'El Confidencial', url: 'https://rss.elconfidencial.com/espana/' },
+    { name: 'El Debate', url: 'https://www.eldebate.com/rss/home.xml' },
+    { name: 'The Objective', url: 'https://theobjective.com/feed/' }
+  ];
+
+  let feeds = JSON.parse(localStorage.getItem('news-feeds') || JSON.stringify(DEFAULT_FEEDS));
+  let allNewsPool = [];
+  let itemsToShow = 12;
+  let isLoading = false;
+
+  function toAbsoluteUrl(url, baseUrl) {
+    try {
+      if (!url) return null;
+      if (url.startsWith('http')) return url;
+      const base = new URL(baseUrl);
+      if (url.startsWith('//')) return `https:${url}`;
+      if (url.startsWith('/')) return `${base.origin}${url}`;
+      return `${base.origin}/${url}`;
+    } catch (e) {
+      return url;
+    }
+  }
+
+  async function fetchAllFeeds() {
+    isLoading = true;
+    allNewsPool = [];
+    const newsList = document.getElementById('news-list');
+    
+    for (const feed of feeds) {
+      try {
+        const response = await fetch(feed.url);
+        const text = await response.text();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(text, "text/xml");
+        const items = xmlDoc.querySelectorAll("item, entry");
+        
+        Array.from(items).forEach(item => {
+          const title = item.querySelector("title")?.textContent;
+          const link = item.querySelector("link")?.textContent || item.querySelector("link")?.getAttribute("href");
+          const pubDate = item.querySelector("pubDate, published, updated")?.textContent;
+          
+          // Imagen: media:content, enclosure o img en description
+          let image = item.querySelector("enclosure")?.getAttribute("url") || 
+                      item.querySelector("content")?.getAttribute("url") ||
+                      item.querySelector("media\\:content")?.getAttribute("url");
+          
+          if (!image) {
+            const desc = item.querySelector("description, summary")?.textContent || "";
+            const imgMatch = desc.match(/<img[^>]*src="([^"]*)"/);
+            if (imgMatch) image = imgMatch[1];
+          }
+
+          // Convertir a absoluta
+          image = toAbsoluteUrl(image, feed.url);
+
+          const snippet = item.querySelector("description, summary")?.textContent
+            ?.replace(/<[^>]*>/g, '').substring(0, 160).trim();
+
+          if (title && link) {
+            allNewsPool.push({
+              title,
+              link,
+              image,
+              snippet,
+              source: feed.name,
+              date: new Date(pubDate || Date.now())
+            });
+          }
+        });
+      } catch (e) {
+        console.warn(`No se pudo cargar ${feed.name} por política de CORS o error de red.`);
+      }
+    }
+
+    allNewsPool.sort((a, b) => b.date - a.date);
+    renderNews();
+    
+    const container = document.getElementById('news-container');
+    if (container) container.classList.remove('opacity-0', 'translate-y-8');
+    isLoading = false;
+  }
+
+  function renderNews() {
+    const newsList = document.getElementById('news-list');
+    if (!newsList) return;
+
+    const slice = allNewsPool.slice(0, itemsToShow);
+    
+    if (slice.length === 0) {
+      newsList.innerHTML = '<p class="text-center opacity-30 py-20 col-span-full uppercase tracking-widest text-xs">CORS bloqueó las noticias o no hay feeds disponibles.</p>';
+      return;
+    }
+
+    newsList.innerHTML = slice.map(item => `
+      <article class="group bg-slate-900/40 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-500 flex flex-col shadow-2xl">
+        <div class="aspect-video overflow-hidden bg-white/5 relative flex items-center justify-center">
+          ${item.image ? `
+            <img 
+              src="${item.image}" 
+              alt="" 
+              class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+              loading="lazy" 
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'"
+            />
+          ` : ''}
+          <div class="${item.image ? 'hidden' : 'flex'} absolute inset-0 items-center justify-center bg-gradient-to-br from-white/5 to-white/[0.02]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="text-white/10"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect><circle cx="9" cy="9" r="2"></circle><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path></svg>
+          </div>
+        </div>
+        <div class="p-6 flex flex-col flex-grow">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">${item.source}</span>
+            <span class="text-[10px] text-white/40 font-medium">${item.date.toLocaleDateString()}</span>
+          </div>
+          <h3 class="text-xl font-bold mb-3 line-clamp-2 leading-tight group-hover:text-blue-400 transition-colors">
+            <a href="${item.link}" target="_blank">${item.title}</a>
+          </h3>
+          <p class="text-sm text-white/60 mb-6 line-clamp-3 leading-relaxed flex-grow">${item.snippet || ''}</p>
+          <a href="${item.link}" target="_blank" class="inline-flex items-center gap-2 text-[10px] font-black text-white/30 group-hover:text-white transition-colors uppercase tracking-widest">
+            Leer más <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </a>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  // Scroll infinito local
+  window.addEventListener('scroll', () => {
+    if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+      if (itemsToShow < allNewsPool.length) {
+        itemsToShow += 9;
+        renderNews();
+      }
+    }
+  });
+
+  // Configuración del modal (igual que antes)
+  const configBtn = document.getElementById('config-news');
+  const modal = document.getElementById('news-modal');
+  const closeModal = document.getElementById('close-modal');
+  const addFeedBtn = document.getElementById('add-feed');
+  const activeFeedsList = document.getElementById('active-feeds');
+
+  configBtn?.addEventListener('click', () => {
+    modal?.classList.remove('opacity-0', 'pointer-events-none');
+    renderActiveFeeds();
+  });
+  closeModal?.addEventListener('click', () => modal?.classList.add('opacity-0', 'pointer-events-none'));
+
+  function renderActiveFeeds() {
+    if (!activeFeedsList) return;
+    activeFeedsList.innerHTML = feeds.map((f, i) => `
+      <div class="flex items-center justify-between bg-white/5 p-2 rounded-lg">
+        <span class="text-sm truncate text-white/80">${f.name}</span>
+        <button onclick="removeFeed(${i})" class="text-red-400 p-1"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg></button>
+      </div>
+    `).join('');
+  }
+
+  // @ts-ignore
+  window.removeFeed = (i) => { feeds.splice(i, 1); localStorage.setItem('news-feeds', JSON.stringify(feeds)); renderActiveFeeds(); fetchAllFeeds(); };
+
+  addFeedBtn?.addEventListener('click', () => {
+    const name = (document.getElementById('feed-name') as HTMLInputElement).value;
+    const url = (document.getElementById('feed-url') as HTMLInputElement).value;
+    if (name && url) { feeds.push({ name, url }); localStorage.setItem('news-feeds', JSON.stringify(feeds)); fetchAllFeeds(); }
+  });
+
+  fetchAllFeeds();
+</script>
+
+<style>
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+</style>

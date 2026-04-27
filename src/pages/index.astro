@@ -1,0 +1,32 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Clock from '../components/Clock.astro';
+import SearchBox from '../components/SearchBox.astro';
+import WeatherWidget from '../components/WeatherWidget.astro';
+import NewsWidget from '../components/NewsWidget.astro';
+---
+
+<Layout title="Inicio" isHome={true}>
+	<main class="min-h-screen flex flex-col items-center relative">
+    <div class="h-screen flex flex-col items-center justify-center w-full flex-shrink-0">
+      <WeatherWidget />
+      <Clock />
+      <SearchBox />
+    </div>
+    
+    <div class="w-full max-w-5xl px-4 pb-20">
+      <NewsWidget />
+    </div>
+    
+    <div class="py-10 opacity-30 text-[10px] text-white uppercase tracking-[0.2em]">
+      &copy; 2026 START SEARCH
+    </div>
+	</main>
+</Layout>
+
+<style>
+	main {
+		width: 100%;
+		max-width: calc(100% - 2rem);
+	}
+</style>

@@ -1,0 +1,60 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+  isHome?: boolean;
+}
+
+const { title, isHome = false } = Astro.props;
+const randomBg = `https://picsum.photos/1920/1080?random=${Math.random()}`;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{title} | Start</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+	</head>
+	<body class={isHome ? "bg-black" : "bg-white text-black"}>
+    {isHome && (
+      <div 
+        class="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-700 brightness-75 grayscale-[0.2]"
+        style={`background-image: url('${randomBg}')`}
+      >
+        <div class="absolute inset-0 backdrop-blur-[2px] bg-black/20"></div>
+      </div>
+    )}
+		<slot />
+	</body>
+</html>
+
+<style is:global>
+	:root {
+		--accent: 136, 58, 234;
+		--accent-light: 224, 204, 250;
+		--accent-dark: 49, 10, 101;
+		--accent-gradient: linear-gradient(
+			45deg,
+			rgb(var(--accent)),
+			rgb(var(--accent-light)) 30%,
+			white 60%
+		);
+	}
+  
+  /* Animación suave para la carga de imágenes de fondo */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  body {
+    animation: fadeIn 0.5s ease-in;
+  }
+</style>
