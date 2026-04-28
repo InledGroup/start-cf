@@ -71,7 +71,7 @@ const randomBg = `https://picsum.photos/1920/1080?random=${Math.random()}`;
     </script>
     <slot name="head" />
 	</head>
-	<body class={isHome ? "bg-black" : "bg-white text-black"}>
+	<body class={isHome ? "bg-black text-white" : "bg-white text-black"}>
     {isHome && (
       <div 
         class="fixed inset-0 -z-10 bg-cover bg-center transition-all duration-700 brightness-75 grayscale-[0.2]"

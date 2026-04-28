@@ -16,14 +16,17 @@ const webResults = searchResponse.results;
 const isWaiting = searchResponse.status === 'waiting';
 const waitMs = searchResponse.waitMs || 0;
 
+const [imageResults, wikiData] = await Promise.all([
+  type === 'images' ? searchImages(q) : Promise.resolve([]),
+  type === 'web' && page === 0 ? fetchWikipedia(q) : Promise.resolve(null)
+]);
+
 const seoTitle = q ? `${q} - Búsqueda` : "Buscador Privado";
 const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El buscador privado multi-índice hecho en España. Sin rastreo ni cookies.`;
 ---
 
-<Layout title={seoTitle} description={seoDescription}>
-  <div slot="head">
-    <meta name="robots" content="noindex, follow" />
-  </div>
+<Layout title={seoTitle} description={seoDescription} isHome={false}>
+  <meta slot="head" name="robots" content="noindex, follow" />
   <div class="min-h-screen bg-white text-black">
     {isWaiting && (
       <>
