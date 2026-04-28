@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+Allow: /welcome
+Allow: /privacy
+Allow: /cookies
+Allow: /terms
+
+# Disallow search pages to prevent crawl waste and duplicate content
+Disallow: /search
+Disallow: /api/
+
+Sitemap: https://start.es/sitemap-index.xml

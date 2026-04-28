@@ -6,7 +6,11 @@ import WeatherWidget from '../components/WeatherWidget.astro';
 import NewsWidget from '../components/NewsWidget.astro';
 ---
 
-<Layout title="Inicio" isHome={true}>
+<Layout 
+  title="El Buscador Privado Español" 
+  description="Start Search: El motor de búsqueda multi-índice hecho en España. Privacidad total, sin rastreo y con resultados de múltiples motores en un solo lugar."
+  isHome={true}
+>
 	<main class="min-h-screen flex flex-col items-center relative w-full overflow-x-hidden">
     <div class="min-h-[90vh] md:h-screen flex flex-col items-center justify-center w-full px-4 pt-10 md:pt-0">
       <Clock />

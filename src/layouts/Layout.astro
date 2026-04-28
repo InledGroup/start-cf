@@ -3,10 +3,19 @@ import '../styles/global.css';
 
 interface Props {
 	title: string;
+  description?: string;
   isHome?: boolean;
+  image?: string;
+  canonicalURL?: string;
 }
 
-const { title, isHome = false } = Astro.props;
+const { 
+  title, 
+  description = "Start: El motor de búsqueda privado multi-índice hecho en España. Sin rastreo, sin cookies, solo resultados.",
+  isHome = false,
+  image = "https://hosted.inled.es/start-simple-blanco-sinfondo.png",
+  canonicalURL = Astro.url.href
+} = Astro.props;
 const randomBg = `https://picsum.photos/1920/1080?random=${Math.random()}`;
 ---
 
@@ -17,10 +26,50 @@ const randomBg = `https://picsum.photos/1920/1080?random=${Math.random()}`;
 		<meta name="viewport" content="width=device-width" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title} | Start</title>
+		
+    <!-- SEO Primario -->
+    <title>{title} | Start Search</title>
+    <meta name="title" content={`${title} | Start Search`} />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalURL} />
+    <meta name="robots" content="index, follow" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={`${title} | Start Search`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={`${title} | Start Search`} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={image} />
+
+    <!-- Favicons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800;900&display=swap" rel="stylesheet">
+
+    <!-- Datos Estructurados JSON-LD -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Start Search",
+        "url": "https://start.es",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://start.es/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+    <slot name="head" />
 	</head>
 	<body class={isHome ? "bg-black" : "bg-white text-black"}>
     {isHome && (
