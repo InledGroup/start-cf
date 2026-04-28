@@ -1,0 +1,45 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Términos del Servicio" isHome={true}>
+  <main class="min-h-screen flex flex-col items-center pt-32 px-6 text-white pb-20">
+    <div class="max-w-3xl w-full glass-card p-8 md:p-12 rounded-[2.5rem] border border-white/10">
+      <h1 class="text-4xl font-black mb-8 tracking-tighter">Términos del Servicio</h1>
+      
+      <div class="space-y-6 text-white/70 leading-relaxed font-light">
+        <p>Al utilizar <span class="text-white font-medium">Start</span>, aceptas estos términos. Aunque estemos en **fase Beta**, nos comprometemos a ofrecer un servicio honesto y transparente.</p>
+        
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">1. Uso del Servicio</h2>
+          <p>Start es una herramienta de búsqueda que agrega resultados de terceros. El uso debe ser legal y respetuoso. No nos hacemos responsables de los contenidos externos enlazados.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">2. Fase Beta</h2>
+          <p>El servicio se ofrece "tal cual". Al estar en fase de desarrollo continuo, pueden ocurrir interrupciones temporales o cambios en las funcionalidades mientras mejoramos el producto.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">3. Propiedad Intelectual</h2>
+          <p>Start está licenciado bajo MIT-INLED, consulte <a href="https://license.inled.es" class="text-white/60 hover:text-white transition-colors">license.inled.es</a>.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">4. Contacto</h2>
+          <p>Puedes contactar con nosotros desde <a href="https://inled.es/contacto" class="text-white/60 hover:text-white transition-colors">inled.es/contacto</a>.</p>
+        </section>
+
+        <section> 
+          <h2 class="text-xl font-bold text-white mb-3">5.Limitación de responsabilidad</h2>
+          <p>Los resultados agregados son obtenidos diréctamente de DuckDuckGo, Bing y Mojeek. No somos responsables de los resultados de búsqueda/noticias/imagenes que aparecen ni podemos censurarlas.</p>
+          
+        </section>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-white/10">
+        <a href="/welcome" class="text-white/40 hover:text-white transition-colors text-xs uppercase tracking-widest">&larr; Volver a la landing</a>
+      </div>
+    </div>
+  </main>
+</Layout>

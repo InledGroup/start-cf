@@ -1,0 +1,39 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Política de Privacidad" isHome={true}>
+  <main class="min-h-screen flex flex-col items-center pt-32 px-6 text-white pb-20">
+    <div class="max-w-3xl w-full glass-card p-8 md:p-12 rounded-[2.5rem] border border-white/10">
+      <h1 class="text-4xl font-black mb-8 tracking-tighter">Política de Privacidad</h1>
+      
+      <div class="space-y-6 text-white/70 leading-relaxed font-light">
+        <p>En <span class="text-white font-medium">Start</span> no sabe nada de tí. Literalmente, nos lo pregunte quien sea, que para Start tu eres máximo una petición al servidor, nada más.</p>
+        
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">1. No Recopilación</h2>
+          <p>No recopilamos nada. La infra nos la provee Cloudflare así que ellos solo recopilan que alguien ha entrado a la web. Si eres un bot te impiden entrar y punto.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">2. Procesamiento Local</h2>
+          <p>Configuraciones como tus fuentes de noticias o preferencias de visualización se guardan exclusivamente en el almacenamiento local de tu navegador (LocalStorage). Nosotros nunca recibimos esos datos.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">3. Made in Spain & GDPR</h2>
+          <p>España y la Unión Europea no son precisamente "paraísos de recopilación de datos, nos hacen la vida bastante imposible con lo de la privacidad como si ahora fuéramos a intentar recopilar algo..</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">4. Cookies</h2>
+          <p>Las únicas cookies que hay son las que guardan las preferencias de ajustes. Nada más.</p>
+        </section>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-white/10">
+        <a href="/welcome" class="text-white/40 hover:text-white transition-colors text-xs uppercase tracking-widest">&larr; Volver a la landing</a>
+      </div>
+    </div>
+  </main>
+</Layout>

@@ -1,0 +1,34 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Política de Cookies" isHome={true}>
+  <main class="min-h-screen flex flex-col items-center pt-32 px-6 text-white pb-20">
+    <div class="max-w-3xl w-full glass-card p-8 md:p-12 rounded-[2.5rem] border border-white/10">
+      <h1 class="text-4xl font-black mb-8 tracking-tighter">Política de Cookies</h1>
+      
+      <div class="space-y-6 text-white/70 leading-relaxed font-light">
+        <p>En <span class="text-white font-medium">Start</span>, somos minimalistas hasta con las cookies.</p>
+        
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">¿Qué cookies usamos?</h2>
+          <p>Solo utilizamos cookies técnicas necesarias para que el sitio funcione. No usamos cookies de marketing, analítica de terceros ni rastreo publicitario.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">LocalStorage</h2>
+          <p>Utilizamos el almacenamiento local de tu navegador para guardar tus preferencias (como tus fuentes de noticias configuradas). Estos datos nunca salen de tu dispositivo.</p>
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-white mb-3">Control total</h2>
+          <p>Puedes borrar los datos de navegación y cookies de tu navegador en cualquier momento, lo que restablecerá Start a su estado inicial.</p>
+        </section>
+      </div>
+
+      <div class="mt-12 pt-8 border-t border-white/10">
+        <a href="/welcome" class="text-white/40 hover:text-white transition-colors text-xs uppercase tracking-widest">&larr; Volver a la landing</a>
+      </div>
+    </div>
+  </main>
+</Layout>
