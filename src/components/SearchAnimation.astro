@@ -1,0 +1,82 @@
+---
+---
+<div id="search-animation" class="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+  <div class="flex flex-col items-center gap-8">
+    <img 
+      src="https://hosted.inled.es/start-simple-blanco-sinfondo.png" 
+      alt="Start" 
+      class="h-16 md:h-20 object-contain invert"
+    />
+    
+    <div class="flex gap-2">
+      <div class="w-3 h-3 bg-black rounded-full animate-bounce" style="animation-delay: 0s"></div>
+      <div class="w-3 h-3 bg-black rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+      <div class="w-3 h-3 bg-black rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #search-animation.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+      animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+      transform: translateY(-10px);
+      animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+  }
+  
+  .animate-bounce {
+    animation: bounce 0.6s infinite;
+  }
+</style>
+
+<script>
+  function initSearchAnimation() {
+    const animation = document.getElementById('search-animation');
+    
+    // Capturar todos los formularios que envían a /search
+    document.addEventListener('submit', (e) => {
+      const form = e.target as HTMLFormElement;
+      if (form.action && form.action.includes('/search')) {
+        // Solo mostrar si hay texto en el input de búsqueda
+        const queryInput = form.querySelector('input[name="q"]') as HTMLInputElement;
+        if (queryInput && queryInput.value.trim() !== '') {
+          animation?.classList.add('active');
+        }
+      }
+    });
+
+    // También para cuando se pulsa Intro en el input (a veces el evento submit no se dispara como esperamos o queremos asegurarnos)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const target = e.target as HTMLElement;
+        if (target.tagName === 'INPUT' && (target as HTMLInputElement).name === 'q') {
+          const value = (target as HTMLInputElement).value.trim();
+          if (value !== '') {
+            // El formulario se enviará después de esto, así que activamos la animación
+            // Si el input está dentro de un formulario, el submit event lo capturará, 
+            // pero esto es una capa extra de seguridad.
+            const form = target.closest('form');
+            if (form && form.action.includes('/search')) {
+              animation?.classList.add('active');
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Inicializar en carga inicial
+  initSearchAnimation();
+
+  // Reinicializar para navegaciones de Astro (si se usa View Transitions en el futuro)
+  document.addEventListener('astro:page-load', initSearchAnimation);
+</script>

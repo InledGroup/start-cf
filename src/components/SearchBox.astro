@@ -1,13 +1,22 @@
 ---
+interface Props {
+  showLogo?: boolean;
+  showTypes?: boolean;
+  minimal?: boolean;
+}
+
+const { showLogo = true, showTypes = true, minimal = false } = Astro.props;
 ---
-<div class="w-full max-w-2xl mx-auto px-4">
-  <div class="flex flex-col items-center mb-12">
-    <img 
-      src="https://hosted.inled.es/start-simple-blanco-sinfondo.png" 
-      alt="Start Logo" 
-      class="h-14 md:h-20 object-contain drop-shadow-2xl"
-    />
-  </div>
+<div class={`w-full mx-auto px-4 ${minimal ? 'max-w-xl' : 'max-w-2xl'}`}>
+  {showLogo && (
+    <div class="flex flex-col items-center mb-12">
+      <img 
+        src="https://hosted.inled.es/start-simple-blanco-sinfondo.png" 
+        alt="Start Logo" 
+        class="h-14 md:h-20 object-contain drop-shadow-2xl"
+      />
+    </div>
+  )}
   
   <form action="/search" method="GET" class="group">
     <div class="relative">
@@ -15,33 +24,35 @@
         type="text" 
         name="q" 
         placeholder="Busca en la web o imágenes..." 
-        autofocus
+        autofocus={!minimal}
         autocomplete="off"
-        class="w-full bg-white/10 backdrop-blur-2xl border border-white/20 text-white placeholder-white/40 text-lg rounded-2xl py-5 pl-6 pr-14 focus:outline-none focus:ring-1 focus:ring-white/40 transition-all duration-500 shadow-2xl group-hover:bg-white/15"
+        class={`w-full bg-white/10 backdrop-blur-2xl border border-white/20 text-white placeholder-white/40 rounded-2xl pl-6 pr-14 focus:outline-none focus:ring-1 focus:ring-white/40 transition-all duration-500 shadow-2xl group-hover:bg-white/15 ${minimal ? 'py-4 text-base' : 'py-5 text-lg'}`}
       />
       <button type="submit" class="absolute inset-y-0 right-0 w-16 flex items-center justify-center group/btn">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-white/40 group-hover/btn:text-white transition-all duration-300"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
       </button>
     </div>
 
-    <div class="mt-8 flex justify-center gap-8">
-      <button 
-        type="submit" 
-        name="type" 
-        value="web"
-        class="text-white/60 hover:text-white text-sm font-medium tracking-widest uppercase transition-all hover:scale-105 active:scale-95"
-      >
-        Web
-      </button>
-      <div class="w-px h-4 bg-white/20 self-center"></div>
-      <button 
-        type="submit" 
-        name="type" 
-        value="images"
-        class="text-white/60 hover:text-white text-sm font-medium tracking-widest uppercase transition-all hover:scale-105 active:scale-95"
-      >
-        Imágenes
-      </button>
-    </div>
+    {showTypes && (
+      <div class="mt-8 flex justify-center gap-8">
+        <button 
+          type="submit" 
+          name="type" 
+          value="web"
+          class="text-white/60 hover:text-white text-sm font-medium tracking-widest uppercase transition-all hover:scale-105 active:scale-95"
+        >
+          Web
+        </button>
+        <div class="w-px h-4 bg-white/20 self-center"></div>
+        <button 
+          type="submit" 
+          name="type" 
+          value="images"
+          class="text-white/60 hover:text-white text-sm font-medium tracking-widest uppercase transition-all hover:scale-105 active:scale-95"
+        >
+          Imágenes
+        </button>
+      </div>
+    )}
   </form>
 </div>

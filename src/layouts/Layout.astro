@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SearchAnimation from '../components/SearchAnimation.astro';
 
 interface Props {
 	title: string;
@@ -81,6 +82,7 @@ const randomBg = `https://picsum.photos/1920/1080?random=${Math.random()}`;
       </div>
     )}
 		<slot />
+    <SearchAnimation />
 	</body>
 </html>
 

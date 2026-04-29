@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import SearchBox from '../components/SearchBox.astro';
 ---
 
 <Layout 
@@ -18,29 +19,49 @@ import Layout from '../layouts/Layout.astro';
     </div>
 
     <!-- Hero Section -->
-    <section class="min-h-screen flex flex-col items-center justify-center px-4 text-center z-10">
-      <div class="mb-8 animate-fade-in">
+    <section class="min-h-[85vh] flex flex-col items-center justify-center px-4 text-center z-10 w-full max-w-4xl py-10">
+      <div class="mb-6 animate-fade-in">
         <img 
           src="https://hosted.inled.es/start-simple-blanco-sinfondo.png" 
           alt="Start Logo" 
-          class="h-24 md:h-32 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
+          class="h-20 md:h-28 object-contain drop-shadow-[0_0_30px_rgba(255,255,255,0.3)]"
         />
       </div>
-      <h1 class="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent animate-slide-up">
-        Busca con libertad.<br/>Sin rastros.
+      <h1 class="text-4xl md:text-6xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent animate-slide-up">
+        Busca con libertad.<br/>Sin espías.
       </h1>
-      <p class="text-lg md:text-xl text-white/60 max-w-2xl mb-12 font-light leading-relaxed animate-slide-up delay-100">
+      <p class="text-base md:text-lg text-white/60 max-w-xl mb-10 font-light leading-relaxed animate-slide-up delay-100">
         El motor de búsqueda que respeta tu privacidad, combina los mejores índices del mundo y nace de ingeniería española.
       </p>
-      <div class="flex flex-col md:flex-row gap-6 animate-slide-up delay-200">
-        <a href="/" class="px-10 py-4 bg-white text-black font-bold rounded-2xl hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]">
+      
+      <div class="w-full mb-10 animate-slide-up delay-200 relative group cursor-pointer" id="welcome-search-container">
+        <div class="absolute inset-0 z-20"></div> <!-- Overlay para capturar el click -->
+        <SearchBox showLogo={false} showTypes={false} minimal={true} />
+      </div>
+
+      <div class="flex flex-col md:flex-row gap-4 animate-slide-up delay-300">
+        <button id="btn-start" class="px-8 py-3.5 bg-white text-black font-bold rounded-2xl hover:bg-white/90 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)] text-sm">
           Empezar a buscar
-        </a>
-        <a href="#features" class="px-10 py-4 glass text-white font-bold rounded-2xl hover:bg-white/10 transition-all hover:scale-105 active:scale-95">
+        </button>
+        <a href="#features" class="px-8 py-3.5 glass text-white font-bold rounded-2xl hover:bg-white/10 transition-all hover:scale-105 active:scale-95 text-sm">
           Saber más
         </a>
       </div>
     </section>
+
+    <script is:inline>
+      const startVisited = () => {
+        localStorage.setItem('start_visited', 'true');
+        window.location.href = '/';
+      };
+
+      document.getElementById('welcome-search-container')?.addEventListener('click', startVisited);
+      document.getElementById('btn-start')?.addEventListener('click', startVisited);
+      document.querySelector('a[href="/"]')?.addEventListener('click', (e) => {
+        e.preventDefault();
+        startVisited();
+      });
+    </script>
 
     <!-- Features Section -->
     <section id="features" class="w-full max-w-6xl px-6 py-20 z-10">
@@ -48,11 +69,11 @@ import Layout from '../layouts/Layout.astro';
         <!-- Privacy -->
         <div class="glass-card p-10 rounded-[2.5rem] border border-white/10 flex flex-col items-start group hover:border-white/30 transition-all duration-500">
           <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-white/10 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-hat-glasses-icon lucide-hat-glasses"><path d="M14 18a2 2 0 0 0-4 0"/><path d="m19 11-2.11-6.657a2 2 0 0 0-2.752-1.148l-1.276.61A2 2 0 0 1 12 4H8.5a2 2 0 0 0-1.925 1.456L5 11"/><path d="M2 11h20"/><circle cx="17" cy="18" r="3"/><circle cx="7" cy="18" r="3"/></svg>
           </div>
           <h3 class="text-2xl font-bold mb-4">Privacidad Máxima</h3>
           <p class="text-white/50 leading-relaxed font-light">
-            No guardamos tus búsquedas, no rastreamos tu IP y no utilizamos cookies de seguimiento. Tu identidad es solo tuya.
+            Las prácticas de los motores de búsqueda actuales son indeseables. Nosotros no recopilamos nada de tí. Absolutamente nada. Lee nuestras políticas y lo verás.
           </p>
         </div>
 
@@ -63,7 +84,7 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <h3 class="text-2xl font-bold mb-4">Multi-índice</h3>
           <p class="text-white/50 leading-relaxed font-light">
-            Combinamos los mejores índices (Bing, DDG, Mojeek) para ofrecerte la visión más completa de la web.
+            Con los resultados de calidad de DuckDuckGo, Bing y con el toque independiente de Mojeek
           </p>
         </div>
 
@@ -74,9 +95,32 @@ import Layout from '../layouts/Layout.astro';
           </div>
           <h3 class="text-2xl font-bold mb-4">Made in Spain</h3>
           <p class="text-white/50 leading-relaxed font-light">
-            Apostamos por la soberanía tecnológica. Un motor de búsqueda global diseñado íntegramente en España.
+            Apostamos por la soberanía tecnológica nacional. Al usar Start, estás apoyando a la tecnología española y huyendo de la dependencia inducida por otros buscadores globales.
           </p>
         </div>
+
+         <!-- Sin anuncios -->
+        <div class="glass-card p-10 rounded-[2.5rem] border border-white/10 flex flex-col items-start group hover:border-white/30 transition-all duration-500">
+          <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-white/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-white"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/></svg>
+          </div>
+          <h3 class="text-2xl font-bold mb-4">Sin anuncios</h3>
+          <p class="text-white/50 leading-relaxed font-light">
+            No verás nunca un anuncio ni que te hagas premium ni nada.
+          </p>
+        </div>
+
+         <!-- Protegido contra el fraude -->
+        <div class="glass-card p-10 rounded-[2.5rem] border border-white/10 flex flex-col items-start group hover:border-white/30 transition-all duration-500">
+          <div class="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-white/10 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-white"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          </div>
+          <h3 class="text-2xl font-bold mb-4">Protegido contra el fraude</h3>
+          <p class="text-white/50 leading-relaxed font-light">
+            Gracias a los resultados de Wikipedia, obtienes los enlaces oficiales de los sitios web y empresas que buscas de manera que se reduce el alcance de la suplantación
+          </p>
+        </div>
+
       </div>
     </section>
 
@@ -88,13 +132,14 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <div class="glass-card rounded-[3rem] border border-white/10 overflow-hidden overflow-x-auto">
-        <table class="w-full text-left border-collapse min-w-[800px]">
+        <table class="w-full text-left border-collapse min-w-[900px]">
           <thead>
             <tr class="border-b border-white/10 bg-white/5">
               <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40">Motor</th>
               <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40 text-center">Rastreo</th>
               <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40 text-center">Jurisdicción</th>
               <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40 text-center">Índices</th>
+              <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40 text-center">Relevancia</th>
               <th class="p-8 text-xs uppercase tracking-[0.2em] text-white/40 text-center">Soberanía EU</th>
             </tr>
           </thead>
@@ -107,6 +152,7 @@ import Layout from '../layouts/Layout.astro';
               <td class="p-8 text-center text-red-400 font-medium">Masivo</td>
               <td class="p-8 text-center text-white/60">EE.UU.</td>
               <td class="p-8 text-center text-white/60">Propio</td>
+              <td class="p-8 text-center text-white/60">⭐⭐⭐⭐⭐</td>
               <td class="p-8 text-center">❌</td>
             </tr>
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
@@ -117,6 +163,7 @@ import Layout from '../layouts/Layout.astro';
               <td class="p-8 text-center text-red-400 font-medium">Alto</td>
               <td class="p-8 text-center text-white/60">EE.UU.</td>
               <td class="p-8 text-center text-white/60">Propio</td>
+              <td class="p-8 text-center text-white/60">⭐⭐⭐</td>
               <td class="p-8 text-center">❌</td>
             </tr>
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
@@ -127,17 +174,19 @@ import Layout from '../layouts/Layout.astro';
               <td class="p-8 text-center text-green-400 font-medium">Mínimo</td>
               <td class="p-8 text-center text-white/60">EE.UU.*</td>
               <td class="p-8 text-center text-white/60">Bing / Propios</td>
+              <td class="p-8 text-center text-white/60">⭐⭐⭐⭐</td>
               <td class="p-8 text-center">❌</td>
             </tr>
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
               <td class="p-8 flex items-center gap-4">
-                <img src="https://www.google.com/s2/favicons?domain=ecosia.org&sz=64" class="w-6 h-6 rounded" alt="Ecosia" />
-                <span class="font-bold text-lg">Ecosia</span>
+                <img src="https://www.google.com/s2/favicons?domain=brave.com&sz=64" class="w-6 h-6 rounded" alt="Brave" />
+                <span class="font-bold text-lg">Brave</span>
               </td>
-              <td class="p-8 text-center text-yellow-400 font-medium">Limitado</td>
-              <td class="p-8 text-center text-white/60">Alemania</td>
-              <td class="p-8 text-center text-white/60">Bing</td>
-              <td class="p-8 text-center">✅</td>
+              <td class="p-8 text-center text-green-400 font-medium">Mínimo</td>
+              <td class="p-8 text-center text-white/60">EE.UU.</td>
+              <td class="p-8 text-center text-white/60">Propio</td>
+              <td class="p-8 text-center text-white/60">⭐⭐</td>
+              <td class="p-8 text-center">❌</td>
             </tr>
             <tr class="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
               <td class="p-8 flex items-center gap-4">
@@ -147,6 +196,7 @@ import Layout from '../layouts/Layout.astro';
               <td class="p-8 text-center text-green-400 font-medium">Mínimo</td>
               <td class="p-8 text-center text-white/60">Francia</td>
               <td class="p-8 text-center text-white/60">Bing / Propio</td>
+              <td class="p-8 text-center text-white/60">⭐⭐⭐⭐</td>
               <td class="p-8 text-center">✅</td>
             </tr>
             <tr class="bg-white/5">
@@ -157,6 +207,7 @@ import Layout from '../layouts/Layout.astro';
               <td class="p-8 text-center text-green-400 font-black text-lg">NINGUNO</td>
               <td class="p-8 text-center text-white font-bold">ESPAÑA</td>
               <td class="p-8 text-center text-white font-bold">MULTI-ÍNDICE</td>
+              <td class="p-8 text-center text-white font-black">⭐⭐⭐⭐</td>
               <td class="p-8 text-center text-lg">🇪🇸 ✅</td>
             </tr>
           </tbody>

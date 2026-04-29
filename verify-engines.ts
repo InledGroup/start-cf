@@ -20,7 +20,10 @@ async function verify() {
       
       console.log('\nEjemplos:');
       results.slice(0, 5).forEach((r: any, i: number) => {
-        console.log(`${i+1}. [${r.source.toUpperCase()}] ${r.title} - ${r.url.substring(0, 50)}...`);
+        console.log(`${i+1}. [${r.source.toUpperCase()}] ${r.title}`);
+        console.log(`   URL: ${r.url.substring(0, 80)}...`);
+        console.log(`   DESC: ${r.description.substring(0, 100)}...`);
+        console.log('---');
       });
     } else {
       console.error('ERROR: No se recuperaron resultados.');

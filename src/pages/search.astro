@@ -11,14 +11,14 @@ if (!q) {
 }
 
 const userIp = Astro.clientAddress || 'anon';
-const searchResponse = type === 'web' ? await searchWeb(q, page, userIp) : { results: [], status: 'ok' as const };
+const searchResponse = type === 'web' ? await searchWeb(q, page, userIp) : { results: [], status: 'ok' as const, zeroClick: null };
 const webResults = searchResponse.results;
 const isWaiting = searchResponse.status === 'waiting';
 const waitMs = searchResponse.waitMs || 0;
+const zeroClick = searchResponse.zeroClick;
 
-const [imageResults, wikiData] = await Promise.all([
-  type === 'images' ? searchImages(q) : Promise.resolve([]),
-  type === 'web' && page === 0 ? fetchWikipedia(q) : Promise.resolve(null)
+const [imageResults] = await Promise.all([
+  type === 'images' ? searchImages(q) : Promise.resolve([])
 ]);
 
 const seoTitle = q ? `${q} - Búsqueda` : "Buscador Privado";
@@ -160,31 +160,11 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
                                 onerror="this.parentElement.style.display='none'"
                               />
                             </div>
-                            <div class="flex items-center gap-1 px-1.5 py-0.5 bg-gray-50 border border-gray-100 rounded-full">
-                              {res.source === 'ddg' ? (
-                                <>
-                                  <img src="https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=32" alt="DDG" class="w-3 h-3" />
-                                  <span class="text-[10px] font-bold text-orange-600 uppercase tracking-tighter">ESPAÑA</span>
-                                </>
-                              ) : res.source === 'bing' ? (
-                                <>
-                                  <img src="https://www.google.com/s2/favicons?domain=bing.com&sz=32" alt="Bing" class="w-3 h-3" />
-                                  <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">BING ES</span>
-                                </>
-                              ) : res.source === 'mojeek' ? (
-                                <>
-                                  <img src="https://www.google.com/s2/favicons?domain=mojeek.com&sz=32" alt="Mojeek" class="w-3 h-3" />
-                                  <span class="text-[10px] font-bold text-purple-600 uppercase tracking-tighter">MOJEEK</span>
-                                </>
-                              ) : (
-                                <>
-                                  <img src="https://www.google.com/s2/favicons?domain=google.com&sz=32" alt="Google" class="w-3 h-3" />
-                                  <span class="text-[10px] font-bold text-green-600 uppercase tracking-tighter">GOOGLE</span>
-                                </>
-                              )}
-                            </div>
                           </div>
-                          <span class="text-xs text-gray-400 truncate ml-1">{new URL(res.url).hostname}</span>
+                          <span class="text-xs text-gray-400 truncate max-w-[200px]">{new URL(res.url).hostname}</span>
+                          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-gray-100 text-gray-400 uppercase tracking-tighter border border-gray-200/50">
+                            {res.source}
+                          </span>
                         </div>
                         <a href={res.url} target="_blank" class="block">
                           <h3 class="text-xl text-blue-700 hover:underline mb-1 font-medium">{res.title}</h3>
@@ -322,47 +302,89 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
           )}
         </div>
 
-        <!-- Sidebar / Wikipedia Card -->
-        {type === 'web' && (wikiData || q.toLowerCase().includes('calle') || q.toLowerCase().includes('donde esta')) && (
-          <aside class="w-full lg:w-96 flex-shrink-0">
+        <!-- Sidebar / Zero-click Info -->
+        {type === 'web' && (zeroClick || q.toLowerCase().includes('calle') || q.toLowerCase().includes('donde esta')) && (
+          <aside class="w-full lg:w-[400px] flex-shrink-0">
             <div class="sticky top-28 space-y-6">
-              {/* Mapa en Sidebar */}
-              {(wikiData?.coordinates || q.toLowerCase().includes('calle') || q.toLowerCase().includes('donde esta')) && (
-                <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-sm h-64 bg-gray-50 group hover:shadow-md transition-all">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    frameborder="0"
-                    style="border:0"
-                    src={`https://www.google.com/maps?q=${encodeURIComponent(wikiData?.title || q)}&output=embed`}
-                    allowfullscreen
-                    class="grayscale-[0.2] group-hover:grayscale-0 transition-all"
-                  ></iframe>
+              
+              {/* Zero-click Card */}
+              {zeroClick && (
+                <div class="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                  <div class="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Zero-click info</span>
+                    <div class="flex items-center gap-1.5">
+                      <img src="https://www.google.com/s2/favicons?domain=wikipedia.org&sz=32" alt="" class="w-3.5 h-3.5 opacity-70" />
+                      <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{zeroClick.source === 'ddg-lite' ? 'DDG' : 'Wikipedia'}</span>
+                    </div>
+                  </div>
+
+                  {zeroClick.image && (
+                    <div class="w-full aspect-video overflow-hidden border-b border-gray-100 bg-gray-50">
+                      <img src={zeroClick.image} alt={zeroClick.title} class="w-full h-full object-cover hover:scale-105 transition-transform duration-700" />
+                    </div>
+                  )}
+
+                  <div class="p-8">
+                    <h2 class="text-3xl font-black mb-4 tracking-tighter">{zeroClick.title}</h2>
+                    <p class="text-sm text-gray-600 leading-relaxed mb-8 font-light">
+                      {zeroClick.extract}
+                    </p>
+                    
+                    <div class="space-y-3">
+                      {zeroClick.official_website && (
+                        <a 
+                          href={zeroClick.official_website} 
+                          target="_blank"
+                          class="flex items-center justify-center gap-2 w-full py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200/50"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                          Sitio web oficial
+                        </a>
+                      )}
+                      <a 
+                        href={zeroClick.url} 
+                        target="_blank"
+                        class="flex items-center justify-center gap-2 w-full py-3.5 bg-black text-white rounded-2xl text-sm font-bold hover:bg-black/80 transition-all shadow-lg shadow-black/5"
+                      >
+                        Saber más en Wikipedia
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Mapa integrado en la card si hay coordenadas */}
+                  {(zeroClick.coordinates || q.toLowerCase().includes('calle') || q.toLowerCase().includes('donde esta')) && (
+                    <div class="h-48 w-full border-t border-gray-100 bg-gray-50">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        frameborder="0"
+                        style="border:0"
+                        src={`https://www.google.com/maps?q=${encodeURIComponent(zeroClick.title || q)}&output=embed`}
+                        allowfullscreen
+                        class="grayscale-[0.4] hover:grayscale-0 transition-all duration-500"
+                      ></iframe>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Wikipedia Card */}
-              {wikiData && (
-                <div class="border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  {wikiData.image && (
-                    <img src={wikiData.image} alt={wikiData.title} class="w-full h-48 object-cover" />
-                  )}
-                  <div class="p-6">
-                    <h2 class="text-2xl font-bold mb-2">{wikiData.title}</h2>
-                    <div class="flex items-center gap-1.5 mb-4">
-                      <img src="https://www.google.com/s2/favicons?domain=wikipedia.org&sz=32" alt="" class="w-4 h-4" />
-                      <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">WIKIPEDIA</span>
-                    </div>
-                    <p class="text-sm text-gray-600 leading-relaxed mb-6">
-                      {wikiData.extract}
-                    </p>
-                    <a 
-                      href={wikiData.url} 
-                      target="_blank"
-                      class="inline-block w-full text-center py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-medium transition-colors"
-                    >
-                      Seguir leyendo en Wikipedia
-                    </a>
+              {/* Caso de solo mapa sin zeroClick */}
+              {!zeroClick && (q.toLowerCase().includes('calle') || q.toLowerCase().includes('donde esta')) && (
+                <div class="border border-gray-200 rounded-3xl overflow-hidden bg-white shadow-sm p-2">
+                  <div class="h-80 rounded-2xl overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      frameborder="0"
+                      style="border:0"
+                      src={`https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed`}
+                      allowfullscreen
+                      class="grayscale-[0.2]"
+                    ></iframe>
+                  </div>
+                  <div class="p-4 text-center">
+                    <span class="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Localización encontrada</span>
                   </div>
                 </div>
               )}
@@ -372,9 +394,36 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
       </div>
     </main>
 
-    <footer class="border-t border-gray-100 py-10 mt-20 bg-gray-50">
-      <div class="max-w-7xl mx-auto px-6 text-center text-xs text-gray-400 uppercase tracking-widest">
-        &copy; 2026 START SEARCH - RESULTADOS DE DUCKDUCKGO, BING Y MOJEEK
+    <footer class="border-t border-gray-100 py-12 mt-20 bg-gray-50/50">
+      <div class="max-w-7xl mx-auto px-6">
+        <div class="flex flex-col items-center gap-8">
+          <!-- Engine Status -->
+          <div class="flex flex-wrap justify-center gap-4">
+            {searchResponse.engineStats && Object.entries(searchResponse.engineStats).map(([name, active]) => (
+              <div class={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border-2 transition-all shadow-sm ${active ? 'border-green-500 shadow-green-100/50' : 'border-red-500 shadow-red-100/50 grayscale opacity-60'}`}>
+                <img 
+                  src={`https://www.google.com/s2/favicons?domain=${name === 'ddg' ? 'duckduckgo.com' : (name === 'bing' ? 'bing.com' : (name === 'google' ? 'google.com' : (name === 'qwant' ? 'qwant.com' : 'mojeek.com')))}&sz=32`} 
+                  alt={name}
+                  class="w-4 h-4"
+                />
+                <span class={`text-[10px] font-bold uppercase tracking-wider ${active ? 'text-green-700' : 'text-red-700'}`}>
+                  {name}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div class="text-center space-y-2">
+            <p class="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">
+              &copy; 2026 START SEARCH - EL BUSCADOR QUE RESPETA TU PRIVACIDAD
+            </p>
+            <div class="flex justify-center gap-6 text-[9px] font-bold text-gray-400 uppercase tracking-widest">
+              <a href="/privacy" class="hover:text-black transition-colors">Privacidad</a>
+              <a href="/terms" class="hover:text-black transition-colors">Términos</a>
+              <a href="/cookies" class="hover:text-black transition-colors">Cookies</a>
+            </div>
+          </div>
+        </div>
       </div>
     </footer>
   </div>

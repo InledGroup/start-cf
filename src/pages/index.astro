@@ -11,6 +11,13 @@ import NewsWidget from '../components/NewsWidget.astro';
   description="Start Search: El motor de búsqueda multi-índice hecho en España. Privacidad total, sin rastreo y con resultados de múltiples motores en un solo lugar."
   isHome={true}
 >
+  <script is:inline>
+    // Comprobar si es la primera vez que entra
+    if (!localStorage.getItem('start_visited')) {
+      window.location.href = '/welcome';
+    }
+  </script>
+
 	<main class="min-h-screen flex flex-col items-center relative w-full overflow-x-hidden">
     <div class="min-h-[90vh] md:h-screen flex flex-col items-center justify-center w-full px-4 pt-10 md:pt-0">
       <Clock />
