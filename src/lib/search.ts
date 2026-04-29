@@ -32,7 +32,9 @@ const USER_AGENTS = [
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
-  'Mozilla/5.0 (Apple) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15'
+  'Mozilla/5.0 (Apple) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Edge/122.0.0.0',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Mobile/15E148 Safari/604.1'
 ];
 
 function getStealthHeaders(targetUrl: string) {
@@ -71,10 +73,10 @@ const engineStatus: Record<string, { lastError: number, cooldown: number }> = {
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function smartFetch(url: string, engine: string) {
+async function smartFetch(url: string, engine: string, customHeaders?: any) {
   const status = engineStatus[engine];
   if (Date.now() - status.lastError < status.cooldown) {
-    console.log(`[Cooldown] ${engine} en espera.`);
+    console.log(`[Cooldown] ${engine} en espera. Restante: ${Math.ceil((status.cooldown - (Date.now() - status.lastError)) / 1000)}s`);
     return null;
   }
 
@@ -83,33 +85,48 @@ async function smartFetch(url: string, engine: string) {
 
   try {
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), 8000); // Aumentado a 8s
+    const id = setTimeout(() => controller.abort(), 10000); // Aumentado a 10s para Cloudflare
 
+    const headers = customHeaders || getStealthHeaders(url);
     const res = await fetch(url, { 
-      headers: getStealthHeaders(url),
+      headers: headers,
       signal: controller.signal 
     });
     clearTimeout(id);
     
     if (res.status === 403 || res.status === 429) {
-      console.error(`[Ban] ${engine} bloqueado (${res.status})`);
+      console.error(`[Ban] ${engine} bloqueado (${res.status}) en URL: ${url}`);
       status.lastError = Date.now();
       status.cooldown = 600000; // 10 min de baneo
       return null;
     }
 
+    if (!res.ok) {
+      console.error(`[Error] ${engine} devuelto status ${res.status}`);
+      return null;
+    }
+
     const html = await res.text();
-    const blockSignals = ['detected unusual traffic', 'captcha-delivery', 'robot', 'security challenge', 'nuestro sistema ha detectado'];
+    const blockSignals = [
+      'detected unusual traffic', 
+      'captcha-delivery', 
+      'robot', 
+      'security challenge', 
+      'nuestro sistema ha detectado',
+      'Please complete the security check',
+      'verify you are a human'
+    ];
     
     if (blockSignals.some(sig => html.includes(sig))) {
-      console.error(`[Ban] ${engine} detectó bot por contenido.`);
+      console.error(`[Ban] ${engine} detectó bot por contenido en el HTML.`);
       status.lastError = Date.now();
       status.cooldown = 600000;
       return null;
     }
 
     return html;
-  } catch (e) {
+  } catch (e: any) {
+    console.error(`[Fatal] Error de red o timeout en ${engine}:`, e.message || e);
     return null;
   }
 }
@@ -121,10 +138,13 @@ function cleanUrl(url: string): string {
 
     // Decodificar tracking de Bing si existe (u=a1...)
     if (target.includes('bing.com/ck/a?!')) {
-      const match = target.match(/u=a1(.*?)(&|$)/);
-      if (match && match[1]) {
+      const urlObj = new URL(target);
+      const uParam = urlObj.searchParams.get('u');
+      if (uParam) {
         try {
-          let b64 = match[1].replace(/-/g, '+').replace(/_/g, '/');
+          // Eliminar el prefijo 'a1' si existe
+          let b64 = uParam.startsWith('a1') ? uParam.substring(2) : uParam;
+          b64 = b64.replace(/-/g, '+').replace(/_/g, '/');
           while (b64.length % 4) b64 += '=';
           const decoded = atob(b64);
           if (decoded.startsWith('http')) return cleanUrl(decoded);
@@ -166,24 +186,44 @@ async function fetchGoogle(query: string): Promise<SearchResult[]> {
 }
 
 async function fetchBing(query: string): Promise<SearchResult[]> {
-  const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&cc=ES&setlang=es`;
-  const html = await smartFetch(url, 'bing');
+  const url = `https://www.bing.com/search?q=${encodeURIComponent(query)}&cc=ES&setlang=es&FORM=QBLH&sp=-1&ghc=1`;
+  
+  // Bing suele ser más permisivo si ve una cookie de sesión (fingida)
+  const fakeSessionId = Math.random().toString(36).substring(2, 15).toUpperCase();
+  const stealthHeaders = getStealthHeaders(url);
+  const headers = {
+    ...stealthHeaders,
+    'Cookie': `SRCHD=AF=NOFORM; SRCHUSR=DOB=20240327; _EDGE_S=F=1&ID=${fakeSessionId}; _SS=SID=${fakeSessionId}`,
+  };
+
+  const html = await smartFetch(url, 'bing', headers);
   if (!html) return [];
   const $ = cheerio.load(html);
   const results: SearchResult[] = [];
   
   $('.b_algo, li.b_algo, .b_ans_placeholder').each((_, el) => {
-    const a = $(el).find('h2 a, h3 a').first();
-    const desc = $(el).find('.b_caption p, .b_lineclamp3, .b_lineclamp2, .b_algoSlug, .b_par_cnt, .b_snippet').first().text();
+    const a = $(el).find('h2 a, h3 a, a').first();
+    // Selectores de descripción ampliados para mayor cobertura
+    let desc = $(el).find('.b_caption p, .b_lineclamp3, .b_lineclamp2, .b_algoSlug, .b_par_cnt, .b_snippet, .b_content p, div.b_caption, .b_vPanel p').first().text();
     
+    // Si sigue vacío, intentamos buscar cualquier párrafo o div con texto largo dentro del elemento
+    if (!desc) {
+      $(el).find('p, div').each((_, subEl) => {
+        const text = $(subEl).text().trim();
+        if (text.length > 25 && text.length > (desc?.length || 0)) {
+          desc = text;
+        }
+      });
+    }
+
     if (a.attr('href') && a.text()) {
       const url = a.attr('href')!;
-      if (!url.startsWith('http')) return;
+      if (!url.startsWith('http') || url.includes('bing.com/videos') || url.includes('bing.com/images')) return;
       
       results.push({ 
-        title: a.text(), 
+        title: a.text().trim(), 
         url: url, 
-        description: desc || 'Ver resultado.', 
+        description: desc.trim() || 'Ver resultado.', 
         favicon: '', 
         source: 'bing' 
       });
@@ -194,17 +234,31 @@ async function fetchBing(query: string): Promise<SearchResult[]> {
 
 async function fetchMojeek(query: string): Promise<SearchResult[]> {
   const url = `https://www.mojeek.com/search?q=${encodeURIComponent(query)}`;
-  const html = await smartFetch(url, 'mojeek');
-  if (!html) return [];
-  const $ = cheerio.load(html);
-  const results: SearchResult[] = [];
-  $('.results-standard > li').each((_, el) => {
-    const a = $(el).find('a.title');
-    if (a.attr('href') && a.text()) {
-      results.push({ title: a.text(), url: a.attr('href')!, description: $(el).find('.s').text(), favicon: '', source: 'mojeek' });
-    }
-  });
-  return results;
+  // Mojeek prefiere cabeceras más simples
+  const headers = {
+    'User-Agent': USER_AGENTS[0],
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'es-ES,es;q=0.8',
+    'Referer': 'https://www.mojeek.com/'
+  };
+  
+  try {
+    const res = await fetch(url, { headers });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const results: SearchResult[] = [];
+    $('.results-standard > li').each((_, el) => {
+      const a = $(el).find('a.title');
+      if (a.attr('href') && a.text()) {
+        results.push({ title: a.text(), url: a.attr('href')!, description: $(el).find('.s').text(), favicon: '', source: 'mojeek' });
+      }
+    });
+    return results;
+  } catch (e) {
+    console.error('[Mojeek] Error:', e);
+    return [];
+  }
 }
 
 async function fetchMarginalia(query: string): Promise<SearchResult[]> {
@@ -301,8 +355,8 @@ export async function fetchWikipedia(query: string): Promise<WikipediaData | nul
 }
 
 // MOTOR PRINCIPAL CON CASCADA DE FALLO (Failover)
-export async function searchWeb(query: string, page: number = 0): Promise<SearchResponse> {
-  console.log(`[Search] Inmune Search: "${query}"`);
+export async function searchWeb(query: string, page: number = 0, userIp?: string): Promise<SearchResponse> {
+  console.log(`[Search] Inmune Search: "${query}" (IP: ${userIp || 'unknown'})`);
   
   const wikiPromise = fetchWikipedia(query).catch(() => null);
   const engineStats: Record<string, boolean> = {
@@ -362,9 +416,25 @@ export async function searchWeb(query: string, page: number = 0): Promise<Search
         if (accumulatedResults.length >= 7 && engine.name !== 'mojeek') {
           break; 
         }
+      } else {
+        console.warn(`[Fail] ${engine.name.toUpperCase()} no devolvió resultados.`);
+      }
+    } catch (e: any) {
+      console.error(`[Error] Fallo crítico en ${engine.name}:`, e.message || e);
+    }
+  }
+
+  // FALLBACK DE EMERGENCIA: Si no hay NADA, intentamos Mojeek directo con cabeceras mínimas
+  if (accumulatedResults.length === 0) {
+    console.log('[Emergency] Intentando Mojeek simplificado como último recurso...');
+    try {
+      const results = await fetchMojeek(query);
+      if (results && results.length > 0) {
+        accumulatedResults = results;
+        engineStats['mojeek'] = true;
       }
     } catch (e) {
-      console.error(`[Error] Fallo en ${engine.name}:`, e);
+      console.error('[Emergency] Falló incluso el recurso de emergencia.');
     }
   }
 
@@ -403,7 +473,8 @@ export async function searchWeb(query: string, page: number = 0): Promise<Search
 
 export async function searchImages(query: string) {
   try {
-    const res = await fetch(`https://www.bing.com/images/search?q=${encodeURIComponent(query)}&cc=ES`, { headers: getStealthHeaders() });
+    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(query)}&cc=ES`;
+    const res = await fetch(url, { headers: getStealthHeaders(url) });
     const html = await res.text();
     const $ = cheerio.load(html);
     const results: any[] = [];
