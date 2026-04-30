@@ -6,7 +6,7 @@ export interface SearchResult {
   url: string;
   description: string;
   favicon: string;
-  source: 'ddg' | 'bing' | 'mojeek' | 'google' | 'marginalia' | 'qwant';
+  source: 'ddg' | 'bing' | 'mojeek' | 'google' | 'marginalia' | 'qwant' | 'wikipedia';
 }
 
 export interface WikipediaData {
@@ -68,7 +68,9 @@ const engineStatus: Record<string, { lastError: number, cooldown: number }> = {
   mojeek: { lastError: 0, cooldown: 0 },
   google: { lastError: 0, cooldown: 0 },
   marginalia: { lastError: 0, cooldown: 0 },
-  qwant: { lastError: 0, cooldown: 0 }
+  qwant: { lastError: 0, cooldown: 0 },
+  wikipedia: { lastError: 0, cooldown: 0 },
+  wikidata: { lastError: 0, cooldown: 0 }
 };
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -264,17 +266,60 @@ async function fetchQwant(query: string): Promise<SearchResult[]> {
 
 export async function fetchWikipedia(query: string): Promise<WikipediaData | null> {
   try {
-    const headers = { 'User-Agent': USER_AGENTS[0], 'Accept': 'application/json', 'Accept-Language': 'es-ES,es;q=0.9' };
-    const res = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`, { headers });
-    if (res.status === 404 || !res.ok) {
-       const searchRes = await fetch(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`, { headers });
-       const searchData = await searchRes.json();
-       if (searchData.query?.search?.length > 0) return fetchWikipedia(searchData.query.search[0].title);
+    const summaryUrl = `https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(query)}`;
+    const summaryHtml = await smartFetch(summaryUrl, 'wikipedia');
+    
+    if (!summaryHtml) {
+       // Si falla el summary, intentamos buscar el título correcto primero
+       const searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
+       const searchResText = await smartFetch(searchUrl, 'wikipedia');
+       if (searchResText) {
+         const searchData = JSON.parse(searchResText);
+         if (searchData.query?.search?.length > 0) {
+           return fetchWikipedia(searchData.query.search[0].title);
+         }
+       }
        return null;
     }
-    const data = await res.json();
-    return { title: data.title, extract: data.extract, url: data.content_urls.desktop.page, image: data.thumbnail?.source };
-  } catch { return null; }
+
+    const data = JSON.parse(summaryHtml);
+    let official_website = '';
+
+    try {
+      const propUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=pageprops&titles=${encodeURIComponent(data.title)}&format=json&origin=*`;
+      const propDataText = await smartFetch(propUrl, 'wikipedia');
+      
+      if (propDataText) {
+        const propData = JSON.parse(propDataText);
+        if (propData.query?.pages) {
+          const pageId = Object.keys(propData.query.pages)[0];
+          const wikibaseId = propData.query.pages[pageId].pageprops?.wikibase_item;
+          
+          if (wikibaseId) {
+            const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${wikibaseId}&props=claims&format=json&origin=*`;
+            const wdDataText = await smartFetch(wdUrl, 'wikidata');
+            
+            if (wdDataText) {
+              const wdData = JSON.parse(wdDataText);
+              if (wdData.entities?.[wikibaseId]?.claims?.P856?.[0]?.mainsnak?.datavalue?.value) {
+                official_website = wdData.entities[wikibaseId].claims.P856[0].mainsnak.datavalue.value;
+              }
+            }
+          }
+        }
+      }
+    } catch(e) {}
+
+    return { 
+      title: data.title, 
+      extract: data.extract, 
+      url: data.content_urls.desktop.page, 
+      image: data.thumbnail?.source,
+      official_website: official_website 
+    };
+  } catch (e) {
+    return null;
+  }
 }
 
 export async function searchWeb(query: string, page: number = 0, userIp?: string): Promise<SearchResponse> {
@@ -302,6 +347,20 @@ export async function searchWeb(query: string, page: number = 0, userIp?: string
   }));
 
   let accumulatedResults = resultsArr.flat();
+  const wiki = await wikiPromise;
+
+  // Insertar Sitio Oficial como primer resultado si existe
+  if (wiki?.official_website) {
+    const officialResult: SearchResult = {
+      title: `Sitio oficial de ${wiki.title}`,
+      url: wiki.official_website,
+      description: `Página web oficial confirmada para ${wiki.title}.`,
+      favicon: `https://www.google.com/s2/favicons?domain=${new URL(wiki.official_website).hostname}&sz=64`,
+      source: 'wikipedia'
+    };
+    accumulatedResults.unshift(officialResult);
+  }
+
   if (accumulatedResults.length === 0) {
     try {
       const results = await fetchMojeek(query);
@@ -312,8 +371,7 @@ export async function searchWeb(query: string, page: number = 0, userIp?: string
     } catch (e) {}
   }
 
-  const wiki = await wikiPromise;
-  const sourcePriority: Record<string, number> = { 'google': 1, 'bing': 2, 'qwant': 3, 'ddg': 4, 'mojeek': 10 };
+  const sourcePriority: Record<string, number> = { 'wikipedia': 0, 'google': 1, 'bing': 2, 'qwant': 3, 'ddg': 4, 'mojeek': 10 };
   const unique = new Set();
   const final = accumulatedResults
     .sort((a, b) => (sourcePriority[a.source] || 9) - (sourcePriority[b.source] || 9))
@@ -322,7 +380,7 @@ export async function searchWeb(query: string, page: number = 0, userIp?: string
         const host = new URL(res.url).hostname.replace('www.', '');
         if (unique.has(host)) return false;
         unique.add(host);
-        res.favicon = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
+        if (!res.favicon) res.favicon = `https://www.google.com/s2/favicons?domain=${host}&sz=64`;
         return true;
       } catch { return false; }
     })
