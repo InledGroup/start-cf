@@ -55,8 +55,8 @@ function getStealthHeaders(targetUrl: string) {
     'Sec-Fetch-Site': 'same-origin',
     'Sec-Fetch-User': '?1',
     'Sec-CH-UA': '"Google Chrome";v="123", "Not:A-Brand";v="8", "Chromium";v="123"',
-    'Sec-CH-UA-Mobile': '?0',
-    'Sec-CH-UA-Platform': '"Windows"',
+    'Sec-CH-UA-Mobile': ua.includes('Mobile') ? '?1' : '?0',
+    'Sec-CH-UA-Platform': ua.includes('Windows') ? '"Windows"' : (ua.includes('Mac') ? '"macOS"' : '"Linux"'),
     'Cache-Control': 'max-age=0'
   };
 }
@@ -83,6 +83,9 @@ async function smartFetch(url: string, engine: string, customHeaders?: any) {
     return null;
   }
 
+  // Jitter para evitar rítmos (100-400ms)
+  await sleep(Math.floor(Math.random() * 300) + 100);
+
   try {
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), 8000); 
@@ -97,14 +100,14 @@ async function smartFetch(url: string, engine: string, customHeaders?: any) {
     if (res.status === 403 || res.status === 429) {
       console.error(`[Ban] ${engine} bloqueado (${res.status})`);
       status.lastError = now;
-      status.cooldown = 30000; // Solo 30 segundos
+      status.cooldown = 30000; // Cooldown corto de 30s
       return null;
     }
 
     if (!res.ok) return null;
 
     const html = await res.text();
-    const blockSignals = ['detected unusual traffic', 'captcha-delivery', 'security challenge', 'verify you are a human'];
+    const blockSignals = ['detected unusual traffic', 'captcha-delivery', 'security challenge', 'verify you are a human', 'robot check'];
     
     if (blockSignals.some(sig => html.includes(sig))) {
       status.lastError = now;
@@ -202,50 +205,76 @@ async function fetchBing(query: string): Promise<SearchResult[]> {
 
 async function fetchMojeek(query: string): Promise<SearchResult[]> {
   const url = `https://www.mojeek.com/search?q=${encodeURIComponent(query)}`;
+  // Mojeek prefiere cabeceras de Firefox para no parecer un bot de Chrome en Cloudflare
   const headers = {
-    'User-Agent': USER_AGENTS[0],
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-    'Accept-Language': 'es-ES,es;q=0.8',
-    'Referer': 'https://www.mojeek.com/'
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'es-ES,es;q=0.8,en-US;q=0.5,en;q=0.3',
+    'Referer': 'https://www.mojeek.com/',
+    'DNT': '1',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1'
   };
   
-  try {
-    const res = await fetch(url, { headers });
-    if (!res.ok) return [];
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    const results: SearchResult[] = [];
-    $('.results-standard > li').each((_, el) => {
-      const a = $(el).find('a.title');
-      if (a.attr('href') && a.text()) {
-        results.push({ title: a.text().trim(), url: a.attr('href')!, description: $(el).find('.s').text().trim(), favicon: '', source: 'mojeek' });
-      }
-    });
-    return results;
-  } catch (e) { return []; }
+  const html = await smartFetch(url, 'mojeek', headers);
+  if (!html) return [];
+  const $ = cheerio.load(html);
+  const results: SearchResult[] = [];
+  $('.results-standard > li').each((_, el) => {
+    const a = $(el).find('a.title');
+    if (a.attr('href') && a.text()) {
+      results.push({ 
+        title: a.text().trim(), 
+        url: a.attr('href')!, 
+        description: $(el).find('.s').text().trim(), 
+        favicon: '', 
+        source: 'mojeek' 
+      });
+    }
+  });
+  return results;
 }
 
 async function fetchDDG(query: string): Promise<{results: SearchResult[], zeroClick: any}> {
-  const url = `https://duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
-  const html = await smartFetch(url, 'ddg');
+  // Volvemos a LITE pero con cookie de sesión fingida
+  const url = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}&kl=es-es`;
+  const headers = {
+    ...getStealthHeaders(url),
+    'Cookie': 'v=l; l=es-es'
+  };
+  
+  const html = await smartFetch(url, 'ddg', headers);
   if (!html) return { results: [], zeroClick: null };
   const $ = cheerio.load(html);
   const results: SearchResult[] = [];
   
-  $('.web-result').each((_, el) => {
-    const a = $(el).find('.result__a');
-    const desc = $(el).find('.result__snippet').text().trim();
-    const href = cleanUrl(a.attr('href') || '');
-    if (href && a.text()) {
-      results.push({ title: a.text().trim(), url: href, description: desc || 'Ver resultado.', favicon: '', source: 'ddg' });
+  $('tr').each((_, el) => {
+    const a = $(el).find('a.result-link');
+    if (a.length && a.attr('href')) {
+      const desc = $(el).next().find('.result-snippet').text().trim();
+      results.push({ 
+        title: a.text().trim(), 
+        url: cleanUrl(a.attr('href')!), 
+        description: desc || 'Ver resultado.', 
+        favicon: '', 
+        source: 'ddg' 
+      });
     }
   });
   return { results, zeroClick: null };
 }
 
 async function fetchQwant(query: string): Promise<SearchResult[]> {
+  // Qwant Lite suele ser bloqueado en Cloudflare. Probamos con User Agent de Móvil.
   const url = `https://www.qwant.com/lite/?q=${encodeURIComponent(query)}&l=es_es`;
-  const html = await smartFetch(url, 'qwant');
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'es-ES,es;q=0.9',
+    'Referer': 'https://www.qwant.com/'
+  };
+  
+  const html = await smartFetch(url, 'qwant', headers);
   if (!html) return [];
   const $ = cheerio.load(html);
   const results: SearchResult[] = [];
@@ -270,14 +299,11 @@ export async function fetchWikipedia(query: string): Promise<WikipediaData | nul
     const summaryHtml = await smartFetch(summaryUrl, 'wikipedia');
     
     if (!summaryHtml) {
-       // Si falla el summary, intentamos buscar el título correcto primero
        const searchUrl = `https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&format=json&origin=*`;
        const searchResText = await smartFetch(searchUrl, 'wikipedia');
        if (searchResText) {
          const searchData = JSON.parse(searchResText);
-         if (searchData.query?.search?.length > 0) {
-           return fetchWikipedia(searchData.query.search[0].title);
-         }
+         if (searchData.query?.search?.length > 0) return fetchWikipedia(searchData.query.search[0].title);
        }
        return null;
     }
@@ -288,17 +314,14 @@ export async function fetchWikipedia(query: string): Promise<WikipediaData | nul
     try {
       const propUrl = `https://es.wikipedia.org/w/api.php?action=query&prop=pageprops&titles=${encodeURIComponent(data.title)}&format=json&origin=*`;
       const propDataText = await smartFetch(propUrl, 'wikipedia');
-      
       if (propDataText) {
         const propData = JSON.parse(propDataText);
         if (propData.query?.pages) {
           const pageId = Object.keys(propData.query.pages)[0];
           const wikibaseId = propData.query.pages[pageId].pageprops?.wikibase_item;
-          
           if (wikibaseId) {
             const wdUrl = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${wikibaseId}&props=claims&format=json&origin=*`;
             const wdDataText = await smartFetch(wdUrl, 'wikidata');
-            
             if (wdDataText) {
               const wdData = JSON.parse(wdDataText);
               if (wdData.entities?.[wikibaseId]?.claims?.P856?.[0]?.mainsnak?.datavalue?.value) {
@@ -310,16 +333,8 @@ export async function fetchWikipedia(query: string): Promise<WikipediaData | nul
       }
     } catch(e) {}
 
-    return { 
-      title: data.title, 
-      extract: data.extract, 
-      url: data.content_urls.desktop.page, 
-      image: data.thumbnail?.source,
-      official_website: official_website 
-    };
-  } catch (e) {
-    return null;
-  }
+    return { title: data.title, extract: data.extract, url: data.content_urls.desktop.page, image: data.thumbnail?.source, official_website: official_website };
+  } catch (e) { return null; }
 }
 
 export async function searchWeb(query: string, page: number = 0, userIp?: string): Promise<SearchResponse> {
@@ -349,26 +364,14 @@ export async function searchWeb(query: string, page: number = 0, userIp?: string
   let accumulatedResults = resultsArr.flat();
   const wiki = await wikiPromise;
 
-  // Insertar Sitio Oficial como primer resultado si existe
   if (wiki?.official_website) {
-    const officialResult: SearchResult = {
+    accumulatedResults.unshift({
       title: `Sitio oficial de ${wiki.title}`,
       url: wiki.official_website,
       description: `Página web oficial confirmada para ${wiki.title}.`,
       favicon: `https://www.google.com/s2/favicons?domain=${new URL(wiki.official_website).hostname}&sz=64`,
       source: 'wikipedia'
-    };
-    accumulatedResults.unshift(officialResult);
-  }
-
-  if (accumulatedResults.length === 0) {
-    try {
-      const results = await fetchMojeek(query);
-      if (results && results.length > 0) {
-        accumulatedResults = results;
-        engineStats['mojeek'] = true;
-      }
-    } catch (e) {}
+    });
   }
 
   const sourcePriority: Record<string, number> = { 'wikipedia': 0, 'google': 1, 'bing': 2, 'qwant': 3, 'ddg': 4, 'mojeek': 10 };
