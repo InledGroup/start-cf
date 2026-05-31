@@ -49,20 +49,6 @@ import SearchBox from '../components/SearchBox.astro';
       </div>
     </section>
 
-    <script is:inline>
-      const startVisited = () => {
-        localStorage.setItem('start_visited', 'true');
-        window.location.href = '/';
-      };
-
-      document.getElementById('welcome-search-container')?.addEventListener('click', startVisited);
-      document.getElementById('btn-start')?.addEventListener('click', startVisited);
-      document.querySelector('a[href="/"]')?.addEventListener('click', (e) => {
-        e.preventDefault();
-        startVisited();
-      });
-    </script>
-
     <!-- Features Section -->
     <section id="features" class="w-full max-w-6xl px-6 py-20 z-10">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -294,6 +280,27 @@ import SearchBox from '../components/SearchBox.astro';
         </nav>
       </div>
     </footer>
+
+    <script is:inline>
+      const startVisited = () => {
+        localStorage.setItem('start_visited', 'true');
+        window.location.href = '/';
+      };
+
+      // Manejar el contenedor de búsqueda
+      document.getElementById('welcome-search-container')?.addEventListener('click', startVisited);
+      
+      // Manejar el botón de empezar
+      document.getElementById('btn-start')?.addEventListener('click', startVisited);
+      
+      // Manejar todos los enlaces que van a la home
+      document.querySelectorAll('a[href="/"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          startVisited();
+        });
+      });
+    </script>
 
   </main>
 </Layout>

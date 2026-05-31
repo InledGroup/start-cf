@@ -1,7 +1,20 @@
 ---
 ---
-<div id="weather-widget" class="md:absolute md:top-6 md:right-6 p-3 md:p-4 glass rounded-2xl text-white min-w-[120px] md:min-w-[150px] transition-all duration-500 opacity-0 transform translate-y-2 mb-6 md:mb-0">
-  <div class="flex items-center justify-center md:justify-start gap-3">
+<div id="weather-widget" class="md:absolute md:top-6 md:right-6 p-1 glass rounded-2xl text-white min-w-[120px] md:min-w-[180px] transition-all duration-500 transform translate-y-0 mb-6 md:mb-0 group/weather overflow-hidden">
+  <!-- Estado inicial: Preguntar -->
+  <div id="weather-prompt" class="flex flex-col items-center p-3 gap-2">
+    <div class="flex items-center gap-2">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white/60"><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 19.07 1.41 1.41"/><path d="M12 20v2"/><path d="m6.34 17.66-1.41 1.41"/><path d="M2 12h2"/><path d="m4.93 19.07 1.41-1.41"/><circle cx="12" cy="12" r="4"/></svg>
+      <span class="text-[10px] font-bold uppercase tracking-widest text-white/80">¿Ver el clima?</span>
+    </div>
+    <button id="btn-activate-weather" class="w-full py-1.5 bg-white/10 hover:bg-white/20 text-[9px] font-black uppercase tracking-tighter rounded-lg transition-all">
+      Activar ubicación
+    </button>
+    <p class="text-[8px] text-white/40 leading-tight text-center">Solo local, nunca se envía a un servidor.</p>
+  </div>
+
+  <!-- Estado cargado: Clima -->
+  <div id="weather-content" class="hidden flex items-center p-3 md:p-4 gap-3">
     <div id="weather-icon" class="text-2xl md:text-3xl">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="animate-spin-slow"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
     </div>
@@ -13,15 +26,19 @@
 </div>
 
 <script>
+  const prompt = document.getElementById('weather-prompt');
+  const content = document.getElementById('weather-content');
+  const btn = document.getElementById('btn-activate-weather');
+  const tempEl = document.getElementById('temp');
+  const cityEl = document.getElementById('city');
+
   async function getWeather() {
-    const widget = document.getElementById('weather-widget');
-    const tempEl = document.getElementById('temp');
-    const cityEl = document.getElementById('city');
-    
     if (!navigator.geolocation) {
       if (cityEl) cityEl.textContent = 'No soportado';
       return;
     }
+
+    if (btn) btn.textContent = 'Solicitando...';
 
     navigator.geolocation.getCurrentPosition(async (position) => {
       const { latitude, longitude } = position.coords;
@@ -33,18 +50,28 @@
         
         if (tempEl) tempEl.textContent = `${Math.round(weather.temperature)}°`;
         if (cityEl) cityEl.textContent = 'Tu ubicación';
-        if (widget) {
-          widget.classList.remove('opacity-0', 'translate-y-2');
-        }
+        
+        prompt?.classList.add('hidden');
+        content?.classList.remove('hidden');
+        
+        // Guardar preferencia
+        localStorage.setItem('weather_allowed', 'true');
       } catch (e) {
-        if (cityEl) cityEl.textContent = 'Error';
+        if (cityEl) cityEl.textContent = 'Error API';
+        if (btn) btn.textContent = 'Error al cargar';
       }
     }, () => {
+      if (btn) btn.textContent = 'Permiso denegado';
       if (cityEl) cityEl.textContent = 'Bloqueado';
     });
   }
 
-  getWeather();
+  // Auto-cargar si ya se permitió antes
+  if (localStorage.getItem('weather_allowed') === 'true') {
+    getWeather();
+  }
+
+  btn?.addEventListener('click', getWeather);
 </script>
 
 <style>
