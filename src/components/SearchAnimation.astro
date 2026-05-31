@@ -41,42 +41,45 @@
 <script>
   function initSearchAnimation() {
     const animation = document.getElementById('search-animation');
-    
-    // Capturar todos los formularios que envían a /search
+    if (!animation) return;
+
+    // Escuchar envíos de formulario normales
     document.addEventListener('submit', (e) => {
       const form = e.target as HTMLFormElement;
-      if (form.action && form.action.includes('/search')) {
-        // Solo mostrar si hay texto en el input de búsqueda
+      if (form && form.action && form.action.includes('/search')) {
         const queryInput = form.querySelector('input[name="q"]') as HTMLInputElement;
         if (queryInput && queryInput.value.trim() !== '') {
-          animation?.classList.add('active');
+          animation.classList.add('active');
         }
       }
     });
 
-    // También para cuando se pulsa Intro en el input (a veces el evento submit no se dispara como esperamos o queremos asegurarnos)
+    // Escuchar la tecla Enter
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' && (target as HTMLInputElement).name === 'q') {
           const value = (target as HTMLInputElement).value.trim();
-          if (value !== '') {
-            // El formulario se enviará después de esto, así que activamos la animación
-            // Si el input está dentro de un formulario, el submit event lo capturará, 
-            // pero esto es una capa extra de seguridad.
-            const form = target.closest('form');
-            if (form && form.action.includes('/search')) {
-              animation?.classList.add('active');
-            }
+          const form = target.closest('form');
+          if (value !== '' && form && form.action.includes('/search')) {
+            animation.classList.add('active');
           }
         }
       }
     });
+
+    // Fallback para activaciones manuales o cambios de página inminentes
+    window.addEventListener('beforeunload', () => {
+      const activeInput = document.activeElement as HTMLInputElement;
+      if (activeInput && activeInput.tagName === 'INPUT' && activeInput.name === 'q' && activeInput.value.trim() !== '') {
+        // Solo activamos si el destino es una búsqueda (no podemos saberlo con certeza aquí, 
+        // pero es el comportamiento esperado del usuario al salir de la página con el foco en el input)
+        animation.classList.add('active');
+      }
+    });
   }
 
-  // Inicializar en carga inicial
+  // Inicializar
   initSearchAnimation();
-
-  // Reinicializar para navegaciones de Astro (si se usa View Transitions en el futuro)
   document.addEventListener('astro:page-load', initSearchAnimation);
 </script>

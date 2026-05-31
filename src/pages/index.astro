@@ -24,9 +24,14 @@ import NewsWidget from '../components/NewsWidget.astro';
   </script>
 
 	<main class="min-h-screen flex flex-col items-center relative w-full overflow-x-hidden">
-    <div class="min-h-[90vh] md:h-screen flex flex-col items-center justify-center w-full px-4 pt-10 md:pt-0">
-      <Clock />
-      <WeatherWidget />
+    <div class="min-h-[90vh] md:h-screen flex flex-col items-center justify-center w-full px-4 pt-4 md:pt-0">
+      
+      <!-- Contenedor único para Clock y Weather que se adapta a móvil y desktop -->
+      <div class="flex items-center justify-between w-full md:block mb-10 md:mb-0 px-2 md:px-0">
+        <Clock />
+        <WeatherWidget />
+      </div>
+
       <SearchBox />
 
       <!-- CTA Community Section - Ahora justo después del buscador -->

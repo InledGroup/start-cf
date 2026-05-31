@@ -1,32 +1,37 @@
 ---
 ---
-<div class="md:absolute md:top-8 md:left-8 text-center md:text-left text-white z-20 mb-8 md:mb-0">
-  <h1 id="clock" class="text-6xl md:text-5xl font-light tracking-tighter drop-shadow-md">00:00</h1>
-  <p id="date" class="text-xs md:text-sm font-light opacity-60 uppercase tracking-widest mt-1">Cargando...</p>
+<div class="md:absolute md:top-8 md:left-8 text-white z-20 flex flex-col items-center md:items-start">
+  <h1 id="clock" class="text-4xl md:text-5xl font-light tracking-tighter drop-shadow-md">00:00</h1>
+  <p id="date" class="hidden md:block text-xs md:text-sm font-light opacity-60 uppercase tracking-widest mt-1">Cargando...</p>
 </div>
 
 <script>
-  function updateClock() {
-    const now = new Date();
-    const clock = document.getElementById('clock');
-    const dateEl = document.getElementById('date');
-    
-    if (clock) {
-      clock.textContent = now.toLocaleTimeString('es-ES', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
+  function initClock() {
+    function updateClock() {
+      const now = new Date();
+      const clock = document.getElementById('clock');
+      const dateEl = document.getElementById('date');
+      
+      if (clock) {
+        clock.textContent = now.toLocaleTimeString('es-ES', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+      }
+      
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString('es-ES', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'long' 
+        });
+      }
     }
-    
-    if (dateEl) {
-      dateEl.textContent = now.toLocaleDateString('es-ES', { 
-        weekday: 'long', 
-        day: 'numeric', 
-        month: 'long' 
-      });
-    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
   }
 
-  setInterval(updateClock, 1000);
-  updateClock();
+  initClock();
+  document.addEventListener('astro:page-load', initClock);
 </script>

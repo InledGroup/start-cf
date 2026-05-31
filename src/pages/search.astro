@@ -39,7 +39,7 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
         </div>
         <div class="bg-amber-50 border-b border-amber-100 px-6 py-2 text-center sticky top-[64px] z-40">
           <p class="text-[10px] font-bold text-amber-800 uppercase tracking-widest flex items-center justify-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9-2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
             Saturación detectada. Mostrando caché. Espera para refrescar: <span id="wait-timer">{Math.ceil(waitMs / 1000)}s</span>
           </p>
         </div>
@@ -47,26 +47,77 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
     )}
 
     <script define:vars={{ waitMs, isWaiting }}>
-      if (isWaiting) {
-        // Iniciar animación de la barra inmediatamente
-        setTimeout(() => {
-          const progress = document.getElementById('wait-progress');
-          if (progress) progress.style.width = '0%';
-        }, 50);
+      function initSearchScripts() {
+        if (isWaiting) {
+          setTimeout(() => {
+            const progress = document.getElementById('wait-progress');
+            if (progress) progress.style.width = '0%';
+          }, 50);
 
-        // Contador de segundos
-        let timeLeft = Math.ceil(waitMs / 1000);
-        const timer = document.getElementById('wait-timer');
-        const interval = setInterval(() => {
-          timeLeft--;
-          if (timer) timer.innerText = timeLeft + 's';
-          if (timeLeft <= 0) {
-            clearInterval(interval);
-            const overlay = document.getElementById('wait-overlay');
-            if (overlay) overlay.style.display = 'none';
-          }
-        }, 1000);
+          let timeLeft = Math.ceil(waitMs / 1000);
+          const timer = document.getElementById('wait-timer');
+          const interval = setInterval(() => {
+            timeLeft--;
+            if (timer) timer.innerText = timeLeft + 's';
+            if (timeLeft <= 0) {
+              clearInterval(interval);
+              const overlay = document.getElementById('wait-overlay');
+              if (overlay) overlay.style.display = 'none';
+            }
+          }, 1000);
+        }
+        
+        // Mobile Focus Mode for Header
+        const headerInput = document.getElementById('header-search-input');
+        const headerForm = document.getElementById('header-search-form');
+        const headerMobileBtn = document.getElementById('header-mobile-btn');
+        const mainHeader = document.querySelector('header');
+
+        if (headerInput && window.innerWidth < 768) {
+          const handleFocus = () => {
+            if (mainHeader) mainHeader.style.zIndex = '150';
+            headerForm.classList.add('fixed', 'top-4', 'left-4', 'right-4', 'z-[160]', 'max-w-none');
+            headerMobileBtn.classList.remove('hidden');
+            
+            if (!document.getElementById('header-focus-overlay')) {
+              const overlay = document.createElement('div');
+              overlay.id = 'header-focus-overlay';
+              overlay.className = 'fixed inset-0 bg-black/60 backdrop-blur-md z-[100] animate-fade-in';
+              document.body.appendChild(overlay);
+              document.body.classList.add('overflow-hidden');
+              overlay.addEventListener('click', () => headerInput.blur());
+            }
+          };
+
+          const handleBlur = (e) => {
+            // Delay para permitir clics
+            setTimeout(() => {
+              if (document.activeElement !== headerInput && document.activeElement !== headerMobileBtn) {
+                if (mainHeader) mainHeader.style.zIndex = '50';
+                headerForm.classList.remove('fixed', 'top-4', 'left-4', 'right-4', 'z-[160]', 'max-w-none');
+                headerMobileBtn.classList.add('hidden');
+                document.getElementById('header-focus-overlay')?.remove();
+                document.body.classList.remove('overflow-hidden');
+              }
+            }, 200);
+          };
+
+          headerInput.addEventListener('focus', handleFocus);
+          headerInput.addEventListener('blur', handleBlur);
+
+          headerMobileBtn.addEventListener('click', (e) => {
+            if (headerInput.value.trim() !== '') {
+              const event = new Event('submit', { cancelable: true, bubbles: true });
+              if (headerForm.dispatchEvent(event)) {
+                headerForm.submit();
+              }
+            }
+          });
+        }
       }
+
+      initSearchScripts();
+      document.addEventListener('astro:page-load', initSearchScripts);
     </script>
     <!-- Header -->
     <header class="border-b border-gray-100 bg-white sticky top-0 z-50 px-6 pt-6 pb-2">
@@ -76,17 +127,28 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
             <img src="https://hosted.inled.es/start-simple-blanco-sinfondo.png" alt="Start" class="h-6 md:h-8 invert" />
           </a>
           
-          <form action="/search" method="GET" class="flex-1 max-w-2xl relative group">
+          <form action="/search" method="GET" id="header-search-form" class="flex-1 max-w-2xl relative group transition-all duration-300">
             <input 
               type="text" 
               name="q" 
+              id="header-search-input"
               value={q}
+              autocomplete="off"
               class="w-full bg-gray-100 border-none rounded-2xl py-2.5 md:py-3 px-4 md:px-6 pr-10 md:pr-12 focus:ring-1 focus:ring-black/10 outline-none transition-all text-sm md:text-base"
             />
             <button type="submit" class="absolute inset-y-0 right-0 pr-3 md:pr-4 flex items-center">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
             </button>
             <input type="hidden" name="type" value={type} />
+            
+            <!-- Botón gigante para móvil en el header -->
+            <button 
+              type="button" 
+              id="header-mobile-btn"
+              class="hidden fixed top-20 left-4 right-4 py-4 bg-black text-white font-black rounded-2xl uppercase tracking-widest text-xs z-[110] animate-slide-up shadow-2xl pointer-events-auto"
+            >
+              Buscar ahora
+            </button>
           </form>
 
           <div class="flex items-center gap-1 md:gap-3">
@@ -397,7 +459,7 @@ const seoDescription = `Resultados de búsqueda para "${q}" en Start Search. El 
                           target="_blank"
                           class="flex items-center justify-center gap-2 w-full py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 transition-all shadow-lg shadow-blue-200/50"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                           Sitio web oficial
                         </a>
                       )}
