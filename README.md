@@ -1,65 +1,58 @@
-# 🚀 START SEARCH
+# START SEARCH
 
-**START SEARCH** es un motor de búsqueda minimalista, independiente y de alto rendimiento diseñado específicamente para ejecutarse en el "Edge" con **Cloudflare Workers** y **Astro**. 
+![Logo](https://hosted.inled.es/start-simple-blanco-sinfondo.png)
 
-Este buscador no depende de una única API comercial; en su lugar, utiliza una arquitectura de **cascada inteligente** sobre múltiples motores (DuckDuckGo, Bing y Mojeek) para garantizar resultados precisos, privados y libres de publicidad intrusiva.
+Start Search es un metabuscador español que agrega resultados de múltiples motores de búsqueda y no depende de un api comercial como sí le pasa a DuckDuckGo, Startpage o Qwant. Al no tener una relación contractual con ninguna empresa, podemos eliminar anuncios y mejorar la experiencia de manera que el mantenimiento sale gratuito y los usuarios pueden disfrutar de un motor de búsqueda 100% independiente.
 
-## ✨ Características Principales
+Utiliza una arquitectura de cascada sobre múltiples motores de búsqueda (DuckDuckGo, Bing, Mojeek, Qwant...) para ofrecer resultados precisos y privados, sin publicidad.  
 
-- 🔍 **Búsqueda Multi-Motor:** Agregación de resultados en tiempo real desde DuckDuckGo Lite, Bing y Mojeek.
-- 🛡️ **Privacidad por Diseño:** Las peticiones se realizan desde el servidor (Edge), enmascarando la identidad del usuario final.
-- ⚡ **Ultra Rápido:** Construido con Astro 6 para una generación de páginas estática y dinámica extremadamente ligera.
-- 🖼️ **Búsqueda de Imágenes:** Interfaz avanzada con barra lateral de detalle y carga optimizada.
-- 📰 **Dashboard Inteligente:** Incluye widgets de noticias (RSS configurables), clima y reloj con una estética minimalista.
-- 🚫 **Ad-Free Experience:** Filtrado agresivo de resultados patrocinados y trackers.
-- 🌍 **Cloudflare Native:** Optimizado para Cloudflare Pages y Workers.
 
-## 🛠️ Tech Stack
 
-- **Framework:** [Astro 6](https://astro.build/)
-- **Lenguaje:** TypeScript
-- **Estilos:** Tailwind CSS 4
-- **Parsing:** Cheerio (Scraping de alto rendimiento)
-- **Despliegue:** Cloudflare Pages
-- **Runtime:** Cloudflare Workers (Edge Runtime)
+## Características
 
-## 🚀 Despliegue Rápido
+- Búsqueda Multi-Motor: Agregado de resultados de DuckDuckGo Lite, Bing y Mojeek.
+- Privacidad: Las peticiones se realizan desde el servidor (Edge), protegiendo la identidad del usuario.
+- Independencia: No tenemos relación con ninguna empresa, nadie nos "vende" sus resultados de búsqueda
+- Rendimiento: Construido con Astro para una experiencia veloz y lenguaje de marcado
+- Funcionalidades: Incluye búsqueda de imágenes, dashboard con widgets de noticias, clima y reloj.
+- Despliegue: Optimizado para Cloudflare Pages y Workers.
+
+## Tech Stack
+
+- Framework: Astro 6
+- Lenguaje: TypeScript
+- Estilos: Tailwind CSS 4
+- Parsing: Cheerio
+- Despliegue: Cloudflare Pages / Cloudflare Workers
+
+## Despliegue
 
 ### Requisitos Previos
-- Node.js 22 o superior.
-- Una cuenta de Cloudflare.
+
+- Node.js 22+
+- Cuenta de Cloudflare
 
 ### Instalación Local
+
 ```bash
-# Clonar el repositorio
 git clone git@github.com:InledGroup/start-cf.git
-
-# Instalar dependencias
+cd start-cf
 npm install
-
-# Iniciar en modo desarrollo
 npm run dev
 ```
 
 ### Despliegue en Cloudflare Pages
-1. Conecta este repositorio a tu panel de **Cloudflare Pages**.
-2. Configura los siguientes parámetros de construcción:
-   - **Framework preset:** `Astro`
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-3. Añade una variable de entorno: `NODE_VERSION = 22`.
-4. ¡Listo! Cada `git push` actualizará tu buscador automáticamente.
 
-## 🏗️ Arquitectura de Búsqueda
+1. Conecta el repositorio a Cloudflare Pages.
+2. Configura:
+   - Build command: `npm run build`
+   - Output directory: `dist`
+3. Variable de entorno: `NODE_VERSION = 22`.
 
-El núcleo del sistema reside en `src/lib/search.ts`, que implementa:
-- **Jitter & UA Rotation:** Técnicas para evitar el bloqueo de motores.
-- **Cascada de Fallback:** Si un motor falla o se satura, el sistema recurre automáticamente a los siguientes sin interrumpir la experiencia del usuario.
-- **Normalización de URLs:** Limpieza profunda de parámetros de rastreo y redirecciones.
+## Contribuciones
 
-## 📄 Licencia
+Las contribuciones son bienvenidas. Si deseas mejorar el motor de búsqueda, añadir funcionalidades o corregir errores, por favor abre un *issue* o envía un *pull request* con tus cambios.
 
-Este proyecto es propiedad de **InledGroup**. Todos los derechos reservados.
+## Licencia
 
----
-Desarrollado con ❤️ para una web más libre y rápida.
+MIT-INLED
